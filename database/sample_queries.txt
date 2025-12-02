@@ -1,0 +1,247 @@
+-- NBA Statistics Database
+-- Sample Queries (SQL and Relational Algebra equivalents)
+
+-- ====================================
+-- BASIC QUERIES
+-- ====================================
+
+-- Query 1: Get all players with their current team
+-- SQL:
+SELECT p.FirstName, p.LastName, p.Position, t.TeamName, t.City
+FROM Players p
+LEFT JOIN Teams t ON p.CurrentTeamID = t.TeamID
+ORDER BY t.TeamName, p.LastName;
+
+-- RA: π(FirstName,LastName,Position,TeamName,City)(Players ⟕(CurrentTeamID=TeamID) Teams)
+
+-- Query 2: Find top 5 scorers in the 2024-25 season
+-- SQL:
+SELECT p.FirstName, p.LastName, t.TeamName, ps.AvgPoints, ps.GamesPlayed
+FROM PlayerSeasonStats ps
+JOIN Players p ON ps.PlayerID = p.PlayerID
+JOIN Teams t ON ps.TeamID = t.TeamID
+WHERE ps.Season = '2024-25'
+ORDER BY ps.AvgPoints DESC
+LIMIT 5;
+
+-- RA: π(FirstName,LastName,TeamName,AvgPoints,GamesPlayed)(
+--     σ(Season='2024-25')(PlayerSeasonStats ⨝ Players ⨝ Teams)
+-- ) [sorted by AvgPoints DESC, limit 5]
+
+-- ====================================
+-- AGGREGATION QUERIES
+-- ====================================
+
+-- Query 3: Calculate total points scored by each team in a specific game
+-- SQL:
+SELECT t.TeamName, g.GameDate, SUM(pgs.Points) as TotalPoints
+FROM PlayerGameStats pgs
+JOIN Teams t ON pgs.TeamID = t.TeamID
+JOIN Games g ON pgs.GameID = g.GameID
+WHERE g.GameID = 1
+GROUP BY t.TeamName, g.GameDate
+ORDER BY TotalPoints DESC;
+
+-- RA: γ(TeamName,GameDate;SUM(Points)→TotalPoints)(
+--     σ(GameID=1)(PlayerGameStats ⨝ Teams ⨝ Games)
+-- )
+
+-- Query 4: Average points per game for all players with 5+ games played
+-- SQL:
+SELECT p.FirstName, p.LastName, t.TeamName, 
+       ps.AvgPoints, ps.GamesPlayed
+FROM PlayerSeasonStats ps
+JOIN Players p ON ps.PlayerID = p.PlayerID
+JOIN Teams t ON ps.TeamID = t.TeamID
+WHERE ps.GamesPlayed >= 5 AND ps.Season = '2024-25'
+ORDER BY ps.AvgPoints DESC;
+
+-- ====================================
+-- COMPLEX JOIN QUERIES
+-- ====================================
+
+-- Query 5: Get all games with final scores and team names
+-- SQL:
+SELECT g.GameDate, 
+       ht.TeamName as HomeTeam, 
+       g.HomeScore,
+       at.TeamName as AwayTeam,
+       g.AwayScore,
+       CASE 
+           WHEN g.HomeScore > g.AwayScore THEN ht.TeamName
+           ELSE at.TeamName
+       END as Winner
+FROM Games g
+JOIN Teams ht ON g.HomeTeamID = ht.TeamID
+JOIN Teams at ON g.AwayTeamID = at.TeamID
+ORDER BY g.GameDate DESC;
+
+-- Query 6: Player performance in their last 5 games
+-- SQL:
+SELECT p.FirstName, p.LastName, g.GameDate, t.TeamName,
+       pgs.Points, pgs.Rebounds, pgs.Assists,
+       pgs.FieldGoalsMade, pgs.FieldGoalsAttempted,
+       ROUND(CAST(pgs.FieldGoalsMade AS DECIMAL) / 
+             NULLIF(pgs.FieldGoalsAttempted, 0) * 100, 1) as FGPercentage
+FROM PlayerGameStats pgs
+JOIN Players p ON pgs.PlayerID = p.PlayerID
+JOIN Games g ON pgs.GameID = g.GameID
+JOIN Teams t ON pgs.TeamID = t.TeamID
+WHERE p.PlayerID = 1  -- LeBron James
+ORDER BY g.GameDate DESC
+LIMIT 5;
+
+-- ====================================
+-- TRANSACTION QUERIES
+-- ====================================
+
+-- Query 7: Get all transactions for a specific player
+-- SQL:
+SELECT p.FirstName, p.LastName,
+       ft.TeamName as FromTeam,
+       tt.TeamName as ToTeam,
+       pt.TransactionType,
+       pt.TransactionDate,
+       pt.ContractValue,
+       pt.Notes
+FROM PlayerTransactions pt
+JOIN Players p ON pt.PlayerID = p.PlayerID
+LEFT JOIN Teams ft ON pt.FromTeamID = ft.TeamID
+JOIN Teams tt ON pt.ToTeamID = tt.TeamID
+WHERE pt.PlayerID = 1
+ORDER BY pt.TransactionDate DESC;
+
+-- Query 8: Find all players who changed teams via trade
+-- SQL:
+SELECT p.FirstName, p.LastName,
+       ft.TeamName as FromTeam,
+       tt.TeamName as ToTeam,
+       pt.TransactionDate
+FROM PlayerTransactions pt
+JOIN Players p ON pt.PlayerID = p.PlayerID
+JOIN Teams ft ON pt.FromTeamID = ft.TeamID
+JOIN Teams tt ON pt.ToTeamID = tt.TeamID
+WHERE pt.TransactionType = 'Trade'
+ORDER BY pt.TransactionDate DESC;
+
+-- ====================================
+-- TEAM STATISTICS QUERIES
+-- ====================================
+
+-- Query 9: Team standings for current season
+-- SQL:
+SELECT t.TeamName, t.Conference,
+       ts.Wins, ts.Losses,
+       ROUND(CAST(ts.Wins AS DECIMAL) / (ts.Wins + ts.Losses) * 100, 1) as WinPercentage,
+       ts.PointsPerGame, ts.ReboundsPerGame, ts.AssistsPerGame
+FROM TeamSeasonStats ts
+JOIN Teams t ON ts.TeamID = t.TeamID
+WHERE ts.Season = '2024-25'
+ORDER BY WinPercentage DESC, ts.Wins DESC;
+
+-- Query 10: Head-to-head record between two teams
+-- SQL:
+SELECT 
+    ht.TeamName as HomeTeam,
+    at.TeamName as AwayTeam,
+    COUNT(*) as GamesPlayed,
+    SUM(CASE WHEN g.HomeScore > g.AwayScore THEN 1 ELSE 0 END) as HomeWins,
+    SUM(CASE WHEN g.AwayScore > g.HomeScore THEN 1 ELSE 0 END) as AwayWins
+FROM Games g
+JOIN Teams ht ON g.HomeTeamID = ht.TeamID
+JOIN Teams at ON g.AwayTeamID = at.TeamID
+WHERE (g.HomeTeamID = 1 AND g.AwayTeamID = 3)
+   OR (g.HomeTeamID = 3 AND g.AwayTeamID = 1)
+GROUP BY ht.TeamName, at.TeamName;
+
+
+-- ====================================
+-- ADVANCED ANALYTICS
+-- ====================================
+
+-- Query 11: Players with best shooting efficiency (min 5 games)
+-- SQL:
+SELECT p.FirstName, p.LastName, t.TeamName,
+       ps.GamesPlayed,
+       ps.AvgPoints,
+       ROUND(ps.FieldGoalPercentage * 100, 1) as FGPct,
+       ROUND(ps.ThreePointPercentage * 100, 1) as ThreePct,
+       ROUND(ps.FreeThrowPercentage * 100, 1) as FTPct
+FROM PlayerSeasonStats ps
+JOIN Players p ON ps.PlayerID = p.PlayerID
+JOIN Teams t ON ps.TeamID = t.TeamID
+WHERE ps.Season = '2024-25' AND ps.GamesPlayed >= 5
+ORDER BY ps.FieldGoalPercentage DESC
+LIMIT 10;
+
+-- Query 12: Find players who had 20+ points in multiple games
+-- SQL:
+SELECT p.FirstName, p.LastName,
+       COUNT(*) as Games20Plus,
+       AVG(pgs.Points) as AvgPoints,
+       MAX(pgs.Points) as HighScore
+FROM PlayerGameStats pgs
+JOIN Players p ON pgs.PlayerID = p.PlayerID
+WHERE pgs.Points >= 20
+GROUP BY p.PlayerID, p.FirstName, p.LastName
+HAVING COUNT(*) >= 2
+ORDER BY AvgPoints DESC;
+
+-- Query 13: Calculate True Shooting Percentage (advanced stat)
+-- TS% = Points / (2 * (FGA + 0.44 * FTA))
+-- SQL:
+SELECT p.FirstName, p.LastName,
+       SUM(pgs.Points) as TotalPoints,
+       SUM(pgs.FieldGoalsAttempted) as TotalFGA,
+       SUM(pgs.FreeThrowsAttempted) as TotalFTA,
+       ROUND(
+           SUM(pgs.Points) / 
+           (2.0 * (SUM(pgs.FieldGoalsAttempted) + 0.44 * SUM(pgs.FreeThrowsAttempted)))
+           * 100, 1
+       ) as TrueShootingPct
+FROM PlayerGameStats pgs
+JOIN Players p ON pgs.PlayerID = p.PlayerID
+GROUP BY p.PlayerID, p.FirstName, p.LastName
+HAVING SUM(pgs.FieldGoalsAttempted) > 0
+ORDER BY TrueShootingPct DESC;
+
+-- ====================================
+-- UTILITY QUERIES
+-- ====================================
+
+-- Query 14: Database statistics
+-- SQL:
+SELECT 'Total Teams' as Metric, COUNT(*) as Count FROM Teams
+UNION ALL
+SELECT 'Total Players', COUNT(*) FROM Players
+UNION ALL
+SELECT 'Total Games', COUNT(*) FROM Games
+UNION ALL
+SELECT 'Total Player Stats Records', COUNT(*) FROM PlayerGameStats
+UNION ALL
+SELECT 'Total Transactions', COUNT(*) FROM PlayerTransactions;
+
+-- Query 15: Recent games with top performers
+-- SQL:
+WITH GameTopScorers AS (
+    SELECT pgs.GameID, 
+           p.FirstName, 
+           p.LastName, 
+           pgs.Points,
+           ROW_NUMBER() OVER (PARTITION BY pgs.GameID ORDER BY pgs.Points DESC) as ScoreRank
+    FROM PlayerGameStats pgs
+    JOIN Players p ON pgs.PlayerID = p.PlayerID
+)
+SELECT g.GameDate,
+       ht.TeamName as HomeTeam,
+       g.HomeScore,
+       at.TeamName as AwayTeam,
+       g.AwayScore,
+       gts.FirstName || ' ' || gts.LastName as TopScorer,
+       gts.Points as TopScorerPoints
+FROM Games g
+JOIN Teams ht ON g.HomeTeamID = ht.TeamID
+JOIN Teams at ON g.AwayTeamID = at.TeamID
+LEFT JOIN GameTopScorers gts ON g.GameID = gts.GameID AND gts.ScoreRank = 1
+ORDER BY g.GameDate DESC
+LIMIT 10;
