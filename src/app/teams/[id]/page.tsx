@@ -30,15 +30,24 @@ export default async function TeamPage({ params }: TeamPageProps) {
   const seasonStats = currentSeason ? await getTeamSeasonStats(teamId, currentSeason) : null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-sm p-8 mb-8 border-b border-gray-200">
-        <h1 className="text-4xl font-bold mb-2 text-gray-900">
+    <div className="container mx-auto px-4 py-12">
+      <div className="bg-white rounded-xl border border-gray-100 p-8 mb-8">
+        <h1 className="text-5xl font-black tracking-tight text-gray-900 mb-4">
           {team.city} {team.teamname}
         </h1>
-        <div className="flex gap-6 text-lg text-gray-600">
-          <p><span className="font-semibold">Conference:</span> {team.conference}</p>
-          <p><span className="font-semibold">Division:</span> {team.division}</p>
-          <p><span className="font-semibold">Founded:</span> {team.foundedyear}</p>
+        <div className="flex gap-6 text-sm">
+          <div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Conference</span>
+            <span className="text-lg font-semibold text-gray-900">{team.conference}</span>
+          </div>
+          <div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Division</span>
+            <span className="text-lg font-semibold text-gray-900">{team.division}</span>
+          </div>
+          <div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Founded</span>
+            <span className="text-lg font-semibold text-gray-900">{team.foundedyear}</span>
+          </div>
         </div>
       </div>
 
@@ -46,35 +55,35 @@ export default async function TeamPage({ params }: TeamPageProps) {
         <div className="lg:col-span-2 space-y-8">
           <TeamSeasonStats teamId={teamId} seasons={seasons} initialStats={seasonStats} />
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Current Roster</h2>
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="text-3xl font-bold mb-6 text-gray-900 tracking-tight">Current Roster</h2>
             {players.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-2 text-left">Player</th>
-                      <th className="px-4 py-2 text-left">Position</th>
-                      <th className="px-4 py-2 text-left">Height</th>
-                      <th className="px-4 py-2 text-left">Weight</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Player</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Position</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Height</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Weight</th>
                     </tr>
                   </thead>
                   <tbody>
                     {players.map((player) => (
-                      <tr key={player.playerid} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3">
+                      <tr key={player.playerid} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-4">
                           <Link
                             href={`/players/${player.playerid}`}
-                            className="text-blue-600 hover:text-blue-800 font-semibold"
+                            className="text-gray-900 hover:text-primary-500 font-semibold"
                           >
                             {player.firstname} {player.lastname}
                           </Link>
                         </td>
-                        <td className="px-4 py-3">{player.position}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4 text-xs font-semibold text-primary-500 uppercase tracking-wide">{player.position}</td>
+                        <td className="px-4 py-4 text-gray-600">
                           {Math.floor(player.height / 12)}'{player.height % 12}"
                         </td>
-                        <td className="px-4 py-3">{player.weight} lbs</td>
+                        <td className="px-4 py-4 text-gray-600">{player.weight} lbs</td>
                       </tr>
                     ))}
                   </tbody>
@@ -87,8 +96,8 @@ export default async function TeamPage({ params }: TeamPageProps) {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-xl font-bold mb-4 text-gray-900">Recent Games</h3>
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h3 className="text-2xl font-bold mb-4 text-gray-900 tracking-tight">Recent Games</h3>
             {recentGames.length > 0 ? (
               <div className="space-y-3">
                 {recentGames.map((game) => {
@@ -102,20 +111,20 @@ export default async function TeamPage({ params }: TeamPageProps) {
                     <Link
                       key={game.gameid}
                       href={`/games/${game.gameid}`}
-                      className="block p-3 border rounded hover:bg-gray-50"
+                      className="block p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`font-bold ${won ? 'text-green-600' : 'text-red-600'}`}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className={`text-xs font-bold px-2 py-1 rounded ${won ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-600'}`}>
                           {won ? 'W' : 'L'}
                         </span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(game.gamedate).toLocaleDateString()}
+                        <span className="text-xs text-gray-500 font-medium">
+                          {new Date(game.gamedate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">vs {oppName}</span>
-                        <span className="font-bold">
-                          {teamScore}-{oppScore}
+                        <span className="text-sm font-medium text-gray-600">vs {oppName}</span>
+                        <span className="text-lg font-bold text-gray-900 tabular-nums">
+                          {teamScore}–{oppScore}
                         </span>
                       </div>
                     </Link>
@@ -127,7 +136,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
             )}
             <Link
               href={`/games?team=${teamId}`}
-              className="block mt-4 text-blue-600 hover:text-blue-800 text-sm font-semibold"
+              className="block mt-4 text-primary-500 hover:text-primary-600 text-sm font-semibold"
             >
               View all games →
             </Link>
