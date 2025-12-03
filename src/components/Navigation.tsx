@@ -15,6 +15,7 @@ export default function Navigation() {
     { href: '/players', label: 'Players' },
     { href: '/games', label: 'Games' },
     { href: '/stats', label: 'Statistics' },
+    { href: '/admin', label: 'Admin' },
   ];
 
   const isActive = (href: string) => {
