@@ -3,6 +3,7 @@ import { AddPlayerForm } from '@/components/admin/AddPlayerForm';
 import { SignPlayerForm } from '@/components/admin/SignPlayerForm';
 import { WaivePlayerForm } from '@/components/admin/WaivePlayerForm';
 import { RemovePlayerForm } from '@/components/admin/RemovePlayerForm';
+import { AddGameForm } from '@/components/admin/AddGameForm';
 
 export default function AdminPage() {
   return (
@@ -11,6 +12,7 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <AddPlayerForm />
+        <AddGameForm />
         <TradePlayerForm />
         <SignPlayerForm />
         <WaivePlayerForm />
